@@ -118,6 +118,24 @@ static int l_inventory_clone(lua::State* L) {
     return lua::pushinteger(L, clone->getId());
 }
 
+static int l_inventory_create(lua::State* L) {
+    auto size = lua::tointeger(L, 1);
+    auto newInv = level->inventories->create(size);
+    return lua::pushinteger(L, newInv->getId());
+}
+
+static int l_inventory_create_virtual(lua::State* L) {
+    auto size = lua::tointeger(L, 1);
+    auto newInv = level->inventories->createVirtual(size);
+    return lua::pushinteger(L, newInv->getId());
+}
+
+static int l_inventory_delete(lua::State* L) {
+    auto id = lua::tointeger(L, 1);
+    level->inventories->remove(id);
+    return 0;
+}
+
 static int l_inventory_move(lua::State* L) {
     auto invAid = lua::tointeger(L, 1);
     auto slotAid = lua::tointeger(L, 2);
@@ -146,4 +164,7 @@ const luaL_Reg inventorylib[] = {
     {"bind_block", lua::wrap<l_inventory_bind_block>},
     {"unbind_block", lua::wrap<l_inventory_unbind_block>},
     {"clone", lua::wrap<l_inventory_clone>},
+    {"create", lua::wrap<l_inventory_create>},
+    {"create_virtual", lua::wrap<l_inventory_create_virtual>},
+    {"delete", lua::wrap<l_inventory_delete>},
     {NULL, NULL}};
