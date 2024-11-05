@@ -139,6 +139,12 @@ public:
 
     /// @brief Show player inventory in inventory-mode
     void openInventory();
+
+    void openInventory(
+        UiDocument* doc,
+        std::shared_ptr<Inventory> targetinv,
+        bool playerInventory
+    );
     
     /// @brief Show block inventory in inventory-mode
     /// @param block block position

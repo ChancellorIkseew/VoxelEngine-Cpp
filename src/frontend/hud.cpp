@@ -382,6 +382,31 @@ void Hud::openInventory() {
 }
 
 void Hud::openInventory(
+    UiDocument* doc,
+    std::shared_ptr<Inventory> targetinv,
+    bool playerInventory
+) {
+    if (targetinv == nullptr) {
+        return;
+    }
+
+    if (isInventoryOpen()) {
+        closeInventory();
+    }
+    auto level = frontend->getLevel();
+    auto content = level->content;
+
+    secondUI = std::dynamic_pointer_cast<InventoryView>(doc->getRoot());
+    if (playerInventory) {
+        openInventory();
+    } else {
+        inventoryOpen = true;
+    }
+    blockUI->bind(targetinv, content);
+    add(HudElement(hud_element_mode::inventory_bound, doc, blockUI, false));
+}
+
+void Hud::openInventory(
     glm::ivec3 block, 
     UiDocument* doc, 
     std::shared_ptr<Inventory> blockinv, 

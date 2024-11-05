@@ -69,6 +69,24 @@ static int l_hud_open_block(lua::State* L) {
     return 2;
 }
 
+static int l_hud_open(lua::State* L) {
+    auto id = lua::tointeger(L, 1);
+    std::string uiLayout = lua::tostring(L, 2);
+    bool playerInventory = !lua::toboolean(L, 3);
+
+    auto assets = engine->getAssets();
+    auto layout = assets->get<UiDocument>(uiLayout);
+    if (layout == nullptr) {
+        throw std::runtime_error("layout '" + uiLayout + "' does not exist");
+    }
+
+    hud->openInventory(layout, level->inventories->get(id), playerInventory);
+
+    lua::pushinteger(L, id);
+    lua::pushstring(L, uiLayout);
+    return 2;
+}
+
 static int l_hud_show_overlay(lua::State* L) {
     auto name = lua::require_string(L, 1);
     bool playerInventory = lua::toboolean(L, 2);
