@@ -77,8 +77,7 @@ void Events::pollEvents() {
     pressedKeys.clear();
     glfwPollEvents();
 
-    for (auto& entry : bindings) {
-        auto& binding = entry.second;
+    for (auto& [_, binding] : bindings) {
         if (!binding.enable) {
             binding.state = false;
             continue;
