@@ -538,6 +538,7 @@ void Hud::closeInventory() {
     exchangeSlotInv = nullptr;
     inventoryOpen = false;
     inventoryView = nullptr;
+    secondInvView = nullptr;
     secondUI = nullptr;
 
     for (auto& element : elements) {
@@ -597,6 +598,9 @@ void Hud::remove(const std::shared_ptr<UINode>& node) {
         }
     }
     cleanup();
+    if (node == secondUI) {
+        closeInventory();
+    }
 }
 
 void Hud::setDebug(bool flag) {
