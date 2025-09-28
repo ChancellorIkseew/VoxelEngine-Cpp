@@ -30,6 +30,7 @@ static int l_create_fragment(lua::State* L) {
 
     auto fragment =
         VoxelFragment::create(*level, pointA, pointB, crop, saveEntities);
+    fragment->prepare(*content);
     std::array<std::shared_ptr<VoxelFragment>, 4> fragmentVariants {
         std::move(fragment)
     };
@@ -42,11 +43,19 @@ static int l_create_fragment(lua::State* L) {
 }
 
 static int l_load_fragment(lua::State* L) {
-    io::path path = lua::require_string(L, 1);
-    if (!io::exists(path)) {
-        throw std::runtime_error("file "+path.string()+" does not exist");
+    dv::value map;
+    if (!lua::isstring(L, 1)) {
+        io::path path = lua::require_string(L, 1);
+        if (!io::exists(path)) {
+            throw std::runtime_error("file "+path.string()+" does not exist");
+        }
+        map = io::read_binary_json(path);
+    } else {
+        auto bytearray = lua::bytearray_as_string(L, 1);
+        map = json::from_binary(
+            reinterpret_cast<const ubyte*>(bytearray.data()), bytearray.size()
+        );
     }
-    auto map = io::read_binary_json(path);
 
     auto fragment = std::make_shared<VoxelFragment>();
     fragment->deserialize(map);
