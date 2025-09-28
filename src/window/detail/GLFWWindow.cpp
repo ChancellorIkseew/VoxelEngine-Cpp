@@ -551,7 +551,6 @@ public:
 private:
     GLFWwindow* window;
     CursorShape cursor = CursorShape::ARROW;
-    //bool fullscreen = false;
     int framerate = -1;
     std::stack<glm::vec4> scissorStack;
     glm::vec4 scissorArea;
