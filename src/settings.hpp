@@ -20,7 +20,7 @@ struct AudioSettings {
 
 struct DisplaySettings {
     /// @brief Is window in full screen mode
-    FlagSetting fullscreen {false};
+    IntegerSetting windowMode {0, 0, 2};
     /// @brief Window width (pixels)
     IntegerSetting width {1280};
     /// @brief Window height (pixels)
