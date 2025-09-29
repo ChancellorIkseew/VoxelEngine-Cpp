@@ -409,16 +409,16 @@ public:
     void setMode(WindowMode mode) override {
         Window::mode = mode;
         GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode* GLFWmode = glfwGetVideoMode(monitor);
+        const GLFWvidmode* glfwMode = glfwGetVideoMode(monitor);
     
         if (input.isCursorLocked()){
             input.toggleCursor();
         }
 
-        if (mode == WindowMode::FULLSREEN) {
-            const int width = GLFWmode->width;
-            const int height = GLFWmode->height;
-            const int refreshRate = GLFWmode->refreshRate;
+        if (mode == WindowMode::FULLSCREEN) {
+            const int width = glfwMode->width;
+            const int height = glfwMode->height;
+            const int refreshRate = glfwMode->refreshRate;
             glfwGetWindowPos(window, &posX, &posY);
             glfwSetWindowMonitor(window, monitor, 0, 0, width, height, refreshRate);
         }
@@ -426,7 +426,7 @@ public:
             glfwGetWindowPos(window, &posX, &posY);
             glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
             glfwSetWindowAttrib(window, GLFW_RESIZABLE, GLFW_FALSE);
-            glfwSetWindowSize(window, GLFWmode->width, GLFWmode->height);
+            glfwSetWindowSize(window, glfwMode->width, glfwMode->height);
             glfwSetWindowPos(window, 0, 0);
         } else {
             glfwSetWindowMonitor(
@@ -608,7 +608,7 @@ static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
 
 static void iconify_callback(GLFWwindow* window, int iconified) {
     auto handler = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
-    if (handler->getMode() == WindowMode::FULLSREEN && iconified == 0) {
+    if (handler->getMode() == WindowMode::FULLSCREEN && iconified == 0) {
         GLFWmonitor* monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode* mode = glfwGetVideoMode(monitor);
         glfwSetWindowMonitor(

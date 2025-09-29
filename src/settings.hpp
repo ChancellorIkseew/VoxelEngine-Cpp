@@ -19,7 +19,7 @@ struct AudioSettings {
 };
 
 struct DisplaySettings {
-    /// @brief Is window in full screen mode
+    /// @brief Window mode (windowed/fullscreen/borderless)
     IntegerSetting windowMode {0, 0, 2};
     /// @brief Window width (pixels)
     IntegerSetting width {1280};

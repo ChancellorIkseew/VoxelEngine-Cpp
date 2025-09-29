@@ -12,7 +12,7 @@ struct DisplaySettings;
 
 enum class WindowMode {
     WINDOWED,
-    FULLSREEN,
+    FULLSCREEN,
     BORDERLESS
 };
 

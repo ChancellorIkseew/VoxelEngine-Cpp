@@ -238,7 +238,11 @@ void Engine::updateHotkeys() {
         gui->toggleDebug();
     }
     if (input->jpressed(Keycode::F11)) {
-        settings.display.windowMode.set(static_cast<int>(WindowMode::FULLSREEN));
+        if (settings.display.windowMode.get() != static_cast<int>(WindowMode::FULLSCREEN)) {
+            settings.display.windowMode.set(static_cast<int>(WindowMode::FULLSCREEN));
+        } else {
+            settings.display.windowMode.set(static_cast<int>(WindowMode::WINDOWED));
+        }
     }
 }
 
