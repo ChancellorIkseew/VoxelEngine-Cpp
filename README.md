@@ -3,7 +3,7 @@
 ## Latest release
 
 - [Download](https://github.com/MihailRis/VoxelCore/releases/latest) | [Скачать](https://github.com/MihailRis/VoxelCore/releases/latest)
-- [Documentation](https://github.com/MihailRis/VoxelCore/blob/release-0.28/doc/en/main-page.md) | [Документация](https://github.com/MihailRis/VoxelCore/blob/release-0.28/doc/ru/main-page.md)
+- [Documentation](https://github.com/MihailRis/VoxelCore/blob/release-0.30/doc/en/main-page.md) | [Документация](https://github.com/MihailRis/VoxelCore/blob/release-0.30/doc/ru/main-page.md)
 
 ---
 
@@ -13,8 +13,10 @@
 
 #### Install EnTT
 
+Installing last version that supports C++17.
+
 ```sh
-git clone https://github.com/skypjack/entt.git
+git clone --branch v3.16.0 https://github.com/skypjack/entt.git
 cd entt
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DENTT_INSTALL=ON ..
@@ -28,13 +30,13 @@ sudo make install
 
 ```sh
 su -
-apt-get install entt-devel libglfw3-devel libGLEW-devel libglm-devel libpng-devel libvorbis-devel libopenal-devel libluajit-devel libstdc++13-devel-static libcurl-devel
+apt-get install entt-devel libglfw3-devel libGLEW-devel libglm-devel libpng-devel libvorbis-devel libopenal-devel libluajit-devel libstdc++13-devel-static libcurl-devel libfreetype-devel
 ```
 
 #### Debian based distros
 
 ```sh
-sudo apt install libglfw3 libglfw3-dev libglew-dev libglm-dev libpng-dev libopenal-dev libluajit-5.1-dev libvorbis-dev libcurl4-openssl-dev
+sudo apt install libglfw3 libglfw3-dev libglew-dev libglm-dev libpng-dev libopenal-dev libluajit-5.1-dev libvorbis-dev libcurl4-openssl-dev libfreetype6-dev
 ```
 
 > [!TIP]
@@ -48,7 +50,7 @@ sudo apt install libglfw3 libglfw3-dev libglew-dev libglm-dev libpng-dev libopen
 #### RHEL based distros
 
 ```sh
-sudo dnf install glfw-devel glew-devel glm-devel libpng-devel libvorbis-devel openal-soft-devel luajit-devel libcurl-devel
+sudo dnf install glfw-devel glew-devel glm-devel libpng-devel libvorbis-devel openal-soft-devel luajit-devel libcurl-devel libfreetype-devel
 ```
 
 #### Arch based distros
@@ -56,13 +58,13 @@ sudo dnf install glfw-devel glew-devel glm-devel libpng-devel libvorbis-devel op
 If you use X11:
 
 ```sh
-sudo pacman -S glfw-x11 glew glm libpng libvorbis openal luajit libcurl
+sudo pacman -S glfw-x11 glew glm libpng libvorbis openal luajit libcurl freetype2
 ```
 
 If you use Wayland:
 
 ```sh
-sudo pacman -S glfw-wayland glew glm libpng libvorbis openal luajit libcurl
+sudo pacman -S glfw-wayland glew glm libpng libvorbis openal luajit libcurl freetype2
 ```
 
 And install EnTT:
@@ -92,7 +94,7 @@ cmake --build . --parallel
 ### Install libraries
 
 ```sh
-brew install glfw3 glew glm libpng libvorbis lua luajit libcurl openal-soft skypjack/entt/entt
+brew install glfw3 glew glm libpng libvorbis lua luajit libcurl openal-soft skypjack/entt/entt freetype
 ```
 
 > [!TIP]

@@ -50,6 +50,13 @@ struct BlockFuncsSet {
     bool randupdate : 1;
     bool onblocktick : 1;
     bool onblockstick : 1;
+    bool onblockpresent : 1;
+    bool onblockremoved : 1;
+};
+
+struct BlockFuncNamesCache {
+    std::string update;
+    std::string randomUpdate;
 };
 
 struct CoordSystem {
@@ -121,7 +128,7 @@ VC_ENUM_METADATA(BlockModelType)
     {"custom", BlockModelType::CUSTOM},
 VC_ENUM_END
 
-enum class CullingMode {
+enum class CullingMode : uint8_t {
     DEFAULT,
     OPTIONAL,
     DISABLED,
@@ -140,6 +147,7 @@ struct BlockMaterial : Serializable {
     std::string placeSound;
     std::string breakSound;
     std::string hitSound;
+    float soundAbsorption = 0.5f;
 
     dv::value toTable() const; // for compatibility
     dv::value serialize() const override;
@@ -228,6 +236,9 @@ public:
     /// @brief Block has semi-transparent texture
     bool translucent = false;
 
+    /// @brief Explicitly overriding 'solid' property if true assigned
+    bool explictlySolid = false;
+
     /// @brief Set of block physical hitboxes
     std::vector<AABB> hitboxes {AABB()};
 
@@ -276,7 +287,7 @@ public:
         /// @brief does the block emit any lights
         bool emissive = false;
 
-        // @brief block size is greather than 1x1x1
+        // @brief block size is greater than 1x1x1
         bool extended = false;
 
         /// @brief set of hitboxes sets with all coord-systems precalculated
@@ -291,6 +302,8 @@ public:
         blockid_t surfaceReplacement = 0;
 
         std::set<int> tags;
+
+        BlockFuncNamesCache eventNames;
     } rt {};
 
     Block(const std::string& name);

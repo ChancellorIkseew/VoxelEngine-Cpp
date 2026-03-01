@@ -42,6 +42,11 @@ Examples:
 - `ondoubleclick` - lua function called when you double click on an element.
 - `onfocus` - lua function called when focusing on an element.
 - `ondefocus` - lua function called when the element loses focus.
+- `onmouseenter` - lua function called when the cursor enters an element.
+- `onmouseleave` - lua function called when the cursor leaves an element.
+- `onmouseover` - lua function called when the cursor hovers over an element.
+- `onmouseout` - lua function called when the cursor exits an element.
+   onmouseenter and onmouseleave do not respect the elements hierarchy.
 - `tooltip` - tooltip text
 - `tooltip-delay` - tooltip show-up delay
 - `gravity` - automatic positioning of the element in the container. (Does not work in automatic containers like panel). Values: *top-left, top-center, top-right, center-left, center-center, center-right, bottom-left, bottom-center, bottom-right*.
@@ -103,6 +108,7 @@ Inner text is a button text.
 
 ## *label*
 
+- `text-align` - text alignment (*left/center/right*). Type: string.
 - `valign` - vertical text alignment: top/center/bottom.
 - `supplier` - text supplier (called every frame).
 - `autoresize` - automatic change of element size (default - false). Does not affect font size.
@@ -114,6 +120,7 @@ Inner text is a button text.
 
 - `src` - name of an image stored in textures folder. Extension is not specified. Type: string.
   Example: *gui/error*
+- `fallback` - a fallback texture displayed when the main texture is missing / loading.
 - `region` - image region x1, y1, x2, y2 from 0.0, 0.0 (upper left corner), 1.0, 1.0 (lower right corner)
 
 ## *canvas*
@@ -136,6 +143,7 @@ The key code for comparison can be obtained via `input.keycode("key_name")`
 - `text-wrap` - allows automatic text wrapping (works only with multiline: "true")
 - `editable` - determines whether the text can be edited.
 - `line-numbers` - enables line numbers display.
+- `keep-line-selection` - keep showing selected line after defocus.
 - `error-color` - color when entering incorrect data (the text does not pass the validator check). Type: RGBA color.
 - `text-color` - text color. Type: RGBA color.
 - `validator` - lua function that checks text for correctness. Takes a string as input, returns true if the text is correct.

@@ -227,6 +227,7 @@ template<> void ContentUnitLoader<Block>::loadUnit(
     root.at("tick-interval").get(def.tickInterval);
     root.at("overlay-texture").get(def.overlayTexture);
     root.at("translucent").get(def.translucent);
+    root.at("solid").get(def.explictlySolid);
 
     if (root.has("fields")) {
         def.dataStruct = std::make_unique<StructLayout>();
@@ -247,5 +248,7 @@ template<> void ContentUnitLoader<Block>::loadUnit(
     if (def.hidden && def.pickingItem == def.name + BLOCK_ITEM_SUFFIX) {
         def.pickingItem = CORE_EMPTY;
     }
-    def.scriptFile = pack.id + ":scripts/" + def.scriptName + ".lua";
+    if (root.has("script-name") || def.scriptFile.empty()) {
+        def.scriptFile = pack.id + ":scripts/" + def.scriptName + ".lua";
+    }
 }

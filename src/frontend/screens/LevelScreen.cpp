@@ -6,6 +6,7 @@
 #include "core_defs.hpp"
 #include "debug/Logger.hpp"
 #include "engine/Engine.hpp"
+#include "engine/EnginePaths.hpp"
 #include "assets/Assets.hpp"
 #include "frontend/ContentGfxCache.hpp"
 #include "frontend/LevelFrontend.hpp"
@@ -25,6 +26,7 @@
 #include "logic/scripting/scripting_hud.hpp"
 #include "maths/voxmaths.hpp"
 #include "objects/Players.hpp"
+#include "objects/Entities.hpp"
 #include "physics/Hitbox.hpp"
 #include "util/stringutil.hpp"
 #include "voxels/Chunks.hpp"
@@ -48,17 +50,19 @@ LevelScreen::LevelScreen(
       gui(engine.getGUI()),
       input(engine.getInput()) {
     Level* level = levelPtr.get();
+    level->entities->setAssets(*engine.getAssets());
 
     auto& settings = engine.getSettings();
     auto& assets = *engine.getAssets();
     auto menu = engine.getGUI().getMenu();
     menu->reset();
+    gui.setActiveFrame("");
 
     auto player = level->players->get(localPlayer);
     assert(player != nullptr);
 
     controller =
-        std::make_unique<LevelController>(&engine, std::move(levelPtr), player);
+        std::make_unique<LevelController>(engine, std::move(levelPtr), player);
     playerController = std::make_unique<PlayerController>(
         settings, *level, *player, *controller->getBlocksController()
     );
@@ -75,13 +79,14 @@ LevelScreen::LevelScreen(
         engine, *controller, *renderer, assets, *player
     );
 
-    keepAlive(settings.graphics.backlight.observe([=](bool) {
+    auto resetChunks = [=](bool) {
         player->chunks->saveAndClear();
         renderer->clear();
-    }));
-    keepAlive(settings.graphics.denseRender.observe([=](bool) {
-        player->chunks->saveAndClear();
-        renderer->clear();
+    };
+    keepAlive(settings.graphics.backlight.observe(resetChunks));
+    keepAlive(settings.graphics.softLighting.observe(resetChunks));
+    keepAlive(settings.graphics.denseRender.observe([=](bool flag) {
+        resetChunks(flag);
         frontend->getContentGfxCache().refresh();
     }));
     keepAlive(settings.camera.fov.observe([=](double value) {
@@ -92,7 +97,11 @@ LevelScreen::LevelScreen(
         renderer->clear();
         return false;
     }));
-
+    controller->preQuitCallbacks.listen([this]() {
+        if (!controller->getLevel()->getWorld()->isNameless()) {
+            saveWorldPreview();
+        }
+    });
     animator = std::make_unique<TextureAnimator>();
     animator->addAnimations(assets.getAnimations());
 
@@ -102,13 +111,12 @@ LevelScreen::LevelScreen(
 LevelScreen::~LevelScreen() {
     if (!controller->getLevel()->getWorld()->isNameless()) {
         saveDecorations();
-        saveWorldPreview();
     }
     scripting::on_frontend_close();
-    // unblock all bindings
     input.getBindings().enableAll();
+    playerController->getPlayer()->chunks->saveAndClear();
     controller->onWorldQuit();
-    engine.getPaths().setCurrentWorldFolder("");
+
 }
 
 void LevelScreen::onOpen() {
@@ -176,7 +184,7 @@ void LevelScreen::saveWorldPreview() {
              static_cast<uint>(previewSize)}
         );
 
-        renderer->renderFrame(ctx, camera, false, true, 0.0f, *postProcessing);
+        renderer->renderFrame(ctx, camera, false, *postProcessing);
         auto image = postProcessing->toImage();
         image->flipY();
         imageio::write("world:preview.png", image.get());
@@ -232,7 +240,7 @@ void LevelScreen::update(float delta) {
     
     auto menu = gui.getMenu();
     bool inputLocked =
-        menu->hasOpenPage() || hud->isInventoryOpen() || gui.isFocusCaught();
+        gui.getActiveFrame() || hud->isInventoryOpen() || gui.isFocusCaught();
     bool paused = hud->isPause();
     if (!paused) {
         world.updateTimers(delta);
@@ -263,9 +271,11 @@ void LevelScreen::draw(float delta) {
     if (!hud->isPause()) {
         scripting::on_entities_render(engine.getTime().getDelta());
     }
-    renderer->renderFrame(
-        ctx, *camera, hudVisible, hud->isPause(), delta, *postProcessing
-    );
+    renderer->update(*camera, delta * !hud->isPause());
+    renderer->renderFrame(ctx, *camera, hudVisible, *postProcessing);
+    if (!hud->isPause()) {
+        scripting::on_frontend_render();
+    }
 
     if (hudVisible) {
         hud->draw(ctx);
@@ -276,5 +286,6 @@ void LevelScreen::onEngineShutdown() {
     if (hud->isInventoryOpen()) {
         hud->closeInventory();
     }
+    controller->processBeforeQuit();
     controller->saveWorld();
 }

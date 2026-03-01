@@ -52,16 +52,22 @@ struct Hitbox {
     glm::vec3 position;
     glm::vec3 halfsize;
     glm::vec3 velocity;
+    glm::vec3 scale {1.0f, 1.0f, 1.0f};
     float linearDamping = 0.5;
     float friction = 1.0f;
     float verticalDamping = 1.0f;
     bool grounded = false;
     float gravityScale = 1.0f;
     bool crouching = false;
+    float stepHeight = 0.5f;
 
     Hitbox(BodyType type, glm::vec3 position, glm::vec3 halfsize);
 
     AABB getAABB() const {
         return AABB(position-halfsize, position+halfsize);
+    }
+
+    glm::vec3 getHalfSize() const {
+        return halfsize * scale;
     }
 };

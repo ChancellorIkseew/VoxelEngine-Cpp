@@ -349,11 +349,23 @@ static int l_caption(lua::State* L) {
     return 0;
 }
 
+static lua::Integer get_variant_index(lua::State* L, const Block* const block, int argumentIndex) {
+    const auto variantIndex = lua::gettop(L) >= argumentIndex ? lua::tointeger(L, argumentIndex) : 0;
+    const size_t variantsSize = block->variants->variants.size();
+    if (variantIndex < 0 || variantIndex >= variantsSize) {
+        throw std::out_of_range(
+            "variant index out of bounds [0, " + std::to_string(variantsSize - 1) + "]");
+    }
+    return variantIndex;
+}
+
 static int l_get_textures(lua::State* L) {
     if (auto def = get_block_def(L)) {
+        const auto& textureFaces = (def->variants ? def->variants->variants[get_variant_index(L, def, 2)].textureFaces :
+            def->defaults.textureFaces);
         lua::createtable(L, 6, 0);
         for (size_t i = 0; i < 6; i++) {
-            lua::pushstring(L, def->defaults.textureFaces[i]); // TODO: variant argument
+            lua::pushstring(L, textureFaces[i]);
             lua::rawseti(L, i + 1);
         }
         return 1;
@@ -364,8 +376,8 @@ static int l_get_textures(lua::State* L) {
 
 static int l_model_name(lua::State* L) {
     if (auto def = get_block_def(L)) {
-        // TODO: variant argument
-        const auto& modelName = def->defaults.model.name;
+        const auto& modelName = (def->variants ? def->variants->variants[get_variant_index(L, def, 2)].model.name :
+            def->defaults.model.name);
         if (modelName.empty()) {
             return lua::pushlstring(L, def->name + ".model");
         }
@@ -376,8 +388,9 @@ static int l_model_name(lua::State* L) {
 
 static int l_get_model(lua::State* L) {
     if (auto def = get_block_def(L)) {
-        // TODO: variant argument
-        return lua::pushlstring(L, BlockModelTypeMeta.getName(def->defaults.model.type));
+        const BlockModelType modelType = (def->variants ? def->variants->variants[get_variant_index(L, def, 2)].model.type :
+            def->defaults.model.type);
+        return lua::pushlstring(L, BlockModelTypeMeta.getName(modelType));
     }
     return 0;
 }
@@ -385,12 +398,13 @@ static int l_get_model(lua::State* L) {
 static int l_get_hitbox(lua::State* L) {
     if (auto def = get_block_def(L)) {
         size_t rotation = lua::tointeger(L, 2);
+        const size_t hitboxIndex = static_cast<size_t>(lua::gettop(L) >= 3 ? lua::tointeger(L, 3) : 0);
         if (def->rotatable) {
             rotation %= def->rotations.MAX_COUNT;
         } else {
             rotation = 0;
         }
-        auto& hitbox = def->rt.hitboxes[rotation].at(0);
+        auto& hitbox = def->rt.hitboxes[rotation].at(hitboxIndex);
         lua::createtable(L, 2, 0);
 
         lua::pushvec3(L, hitbox.min());
@@ -462,8 +476,10 @@ static int l_raycast(lua::State* L) {
     auto start = lua::tovec<3>(L, 1);
     auto dir = lua::tovec<3>(L, 2);
     auto maxDistance = lua::tonumber(L, 3);
+    bool includeNonSelectable = false;
     std::set<blockid_t> filteredBlocks {};
-    if (lua::gettop(L) >= 5) {
+    const int luaStackSize = lua::gettop(L);
+    if (luaStackSize >= 5) {
         if (lua::istable(L, 5)) {
             int addLen = lua::objlen(L, 5);
             for (int i = 0; i < addLen; i++) {
@@ -479,6 +495,9 @@ static int l_raycast(lua::State* L) {
             throw std::runtime_error("table expected for filter");
         }
     }
+    if (luaStackSize >= 6) {
+        includeNonSelectable = lua::toboolean(L, 6);
+    }
     glm::vec3 end;
     glm::ivec3 normal;
     glm::ivec3 iend;
@@ -490,9 +509,10 @@ static int l_raycast(lua::State* L) {
             end,
             normal,
             iend,
-            filteredBlocks
+            filteredBlocks,
+            includeNonSelectable
         )) {
-        if (lua::gettop(L) >= 4 && !lua::isnil(L, 4)) {
+        if (luaStackSize >= 4 && !lua::isnil(L, 4)) {
             lua::pushvalue(L, 4);
         } else {
             lua::createtable(L, 0, 5);
@@ -730,7 +750,7 @@ static int l_pull_register_events(lua::State* L) {
     lua::createtable(L, events.size() * 4, 0);
     for (int i = 0; i < events.size(); i++) {
         const auto& event = events[i];
-        lua::pushinteger(L, static_cast<int>(event.type) | event.id << 16);
+        lua::pushinteger(L, static_cast<int>(event.bits) | event.id << 16);
         lua::rawseti(L, i * 4 + 1);
 
         for (int j = 0; j < 3; j++) {
@@ -783,5 +803,5 @@ const luaL_Reg blocklib[] = {
     {"has_tag", lua::wrap<l_has_tag>},
     {"__get_tags", lua::wrap<l_get_tags>},
     {"__pull_register_events", lua::wrap<l_pull_register_events>},
-    {NULL, NULL}
+    {nullptr, nullptr}
 };
