@@ -2,9 +2,6 @@
 
 Documentation for 0.31.
 
-> [!WARNING]
-> Version is in development. Proceed to [Documentation for 0.30.](https://github.com/MihailRis/voxelcore/blob/release-0.30/doc/en/main-page.md)
-
 ## Sections
 
 - [Assets preloading](assets-preload.md)
@@ -21,5 +18,6 @@ Documentation for 0.31.
 - [Rigging](rigging.md)
 - [Scripting](scripting.md)
 - [Text styles](text-styles.md)
+- [VCM models format](vcm.md)
 - [World generator engine](world-generator.md)
 - [XML UI building](xml-ui-layouts.md)

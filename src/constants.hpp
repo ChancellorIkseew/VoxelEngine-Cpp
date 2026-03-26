@@ -33,6 +33,8 @@ inline constexpr int CHUNK_W = 16;
 inline constexpr int CHUNK_H = 256;
 inline constexpr int CHUNK_D = 16;
 
+inline constexpr int EXTENDED_BLOCK_LIMIT = CHUNK_W; // must not be greater than chunk width and depth
+
 inline constexpr uint VOXEL_USER_BITS = 8;
 inline constexpr uint VOXEL_USER_BITS_OFFSET = sizeof(blockstate_t)*8-VOXEL_USER_BITS;
 
@@ -43,6 +45,9 @@ inline constexpr float CHUNKS_MAP_MAX_LOAD_FACTOR = 0.1f;
 
 /// @brief chunk volume (count of voxels per Chunk)
 inline constexpr int CHUNK_VOL = (CHUNK_W * CHUNK_H * CHUNK_D);
+
+/// @brief default player spawn radius (see GeneratorDef::playerSpawnRadius)
+inline constexpr float DEFAULT_PLAYER_SPAWN_RADIUS = 100.0f;
 
 /// @brief block id used to mark non-existing voxel (voxel of missing chunk)
 inline constexpr blockid_t BLOCK_VOID = std::numeric_limits<blockid_t>::max();

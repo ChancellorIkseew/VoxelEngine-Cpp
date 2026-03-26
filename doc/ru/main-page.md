@@ -2,9 +2,6 @@
 
 Документация версии 0.31.
 
-> [!WARNING]
-> Версия находится в разработке. Перейдите к [документации для 0.30.](https://github.com/MihailRis/voxelcore/blob/release-0.30/doc/ru/main-page.md)
-
 ## Разделы
 
 - [XML разметка интерфейса](xml-ui-layouts.md)
@@ -22,5 +19,5 @@
 - [Свойства сущностей](entity-properties.md)
 - [Скриптинг](scripting.md)
 - [Стили текста](text-styles.md)
-- [Частицы](particles.md)
 - [Формат моделей VCM](vcm.md)
+- [Частицы](particles.md)

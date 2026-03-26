@@ -2,23 +2,22 @@
 
 /// blocks_agent is set of templates but not a class to minimize OOP overhead.
 
-#include "voxel.hpp"
 #include "Block.hpp"
 #include "Chunk.hpp"
 #include "Chunks.hpp"
-#include "VoxelsVolume.hpp"
-#include "GlobalChunks.hpp"
 #include "constants.hpp"
-#include "typedefs.hpp"
 #include "content/Content.hpp"
+#include "GlobalChunks.hpp"
 #include "maths/voxmaths.hpp"
+#include "typedefs.hpp"
+#include "voxel.hpp"
+#include "VoxelsVolume.hpp"
 
 #include <algorithm>
-#include <set>
-#include <algorithm>
-#include <stdint.h>
-#include <stdexcept>
 #include <glm/glm.hpp>
+#include <set>
+#include <stdexcept>
+#include <stdint.h>
 
 struct AABB;
 
@@ -96,7 +95,6 @@ inline const Block& get_block_def(const Storage& chunks, blockid_t id) {
     return chunks.getContentIndices().blocks.require(id);
 }
 
-
 /// @brief Check if block at specified position is solid.
 /// @tparam Storage chunks storage class
 /// @param chunks chunks storage
@@ -104,8 +102,10 @@ inline const Block& get_block_def(const Storage& chunks, blockid_t id) {
 /// @param y position Y
 /// @param z position Z
 /// @return true if block exists and solid
-template<class Storage>
-inline bool is_solid_at(const Storage& chunks, int32_t x, int32_t y, int32_t z) {
+template <class Storage>
+inline bool is_solid_at(
+    const Storage& chunks, int32_t x, int32_t y, int32_t z
+) {
     if (auto vox = get(chunks, x, y, z)) {
         return get_block_def(chunks, vox->id).rt.solid;
     }
@@ -119,8 +119,10 @@ inline bool is_solid_at(const Storage& chunks, int32_t x, int32_t y, int32_t z) 
 /// @param y position Y
 /// @param z position Z
 /// @return true if block exists and replaceable
-template<class Storage>
-inline bool is_replaceable_at(const Storage& chunks, int32_t x, int32_t y, int32_t z) {
+template <class Storage>
+inline bool is_replaceable_at(
+    const Storage& chunks, int32_t x, int32_t y, int32_t z
+) {
     if (auto vox = get(chunks, x, y, z)) {
         return get_block_def(chunks, vox->id).replaceable;
     }
@@ -456,42 +458,111 @@ voxel* raycast(
     bool includeNonSelectable
 );
 
-void get_voxels(const Chunks& chunks, VoxelsVolume* volume, bool backlight=false);
+void get_voxels(
+    const Chunks& chunks, VoxelsVolume* volume, bool backlight = false
+);
 
-void get_voxels(const GlobalChunks& chunks, VoxelsVolume* volume, bool backlight=false);
+void get_voxels(
+    const GlobalChunks& chunks, VoxelsVolume* volume, bool backlight = false
+);
 
 template <class Storage>
-inline const AABB* is_obstacle_at(const Storage& chunks, float x, float y, float z) {
+inline std::optional<AABB> is_obstacle_at(
+    const Storage& chunks, float x, float y, float z, const AABB& aabb
+) {
     int ix = std::floor(x);
     int iy = std::floor(y);
     int iz = std::floor(z);
     voxel* v = get(chunks, ix, iy, iz);
     if (v == nullptr) {
         if (iy >= CHUNK_H) {
-            return nullptr;
+            return std::nullopt;
         } else {
-            static const AABB empty;
-            return &empty;
+            return AABB();
         }
     }
     const auto& def = chunks.getContentIndices().blocks.require(v->id);
-    if (def.obstacle) {
-        glm::ivec3 offset {};
-        if (v->state.segment) {
-            glm::ivec3 point(ix, iy, iz);
-            offset = seek_origin(chunks, point, def, v->state) - point;
-        }
-        const auto& boxes =
-            def.rotatable ? def.rt.hitboxes[v->state.rotation] : def.hitboxes;
-        for (const auto& hitbox : boxes) {
-            if (hitbox.contains(
-                {x - ix - offset.x, y - iy - offset.y, z - iz - offset.z}
-            )) {
-                return &hitbox;
-            }
+    if (!def.obstacle) {
+        return std::nullopt;
+    }
+    glm::ivec3 offset {};
+    if (v->state.segment) {
+        glm::ivec3 point(ix, iy, iz);
+        offset = seek_origin(chunks, point, def, v->state) - point;
+    }
+    const auto& boxes =
+        def.rotatable ? def.rt.hitboxes[v->state.rotation] : def.hitboxes;
+
+    for (const auto& hitbox : boxes) {
+        if (hitbox.intersects(aabb - glm::ivec3(ix, iy, iz))) {
+            return hitbox + offset;
         }
     }
-    return nullptr;
+    return std::nullopt;
+}
+
+template <class Storage>
+inline std::optional<AABB> is_obstacle_at(const Storage& chunks, float x, float y, float z) {
+    return is_obstacle_at(chunks, x, y, z, AABB({x, y, z}, {x + 1, y + 1, z + 1}));
+}
+
+/// @brief Check block grounding
+/// @tparam Storage chunks storage class
+/// @param chunks chunks storage
+/// @param def block definition
+/// @param rotationIndex target block rotation index
+/// @param origin target block origin
+/// @return true if grounded
+template <class Storage>
+inline bool check_grounding(
+    const Storage& chunks,
+    const Block& def,
+    uint8_t rotationIndex,
+    const glm::ivec3& origin
+) {
+    const auto& vec = get_ground_direction(def, rotationIndex);
+
+    if (!def.rt.extended) {
+        return blocks_agent::is_solid_at(
+            chunks, origin.x + vec.x, origin.y + vec.y, origin.z + vec.z
+        );
+    }
+
+    const auto& rotation = def.rotations.variants[rotationIndex];
+
+    if (def.groundingBehaviour == GroundingBehaviour::PARTIAL) {
+        for (int sz = 0; sz < def.size.z; sz++) {
+            for (int sx = 0; sx < def.size.x; sx++) {
+                auto pos = origin;
+                pos += rotation.axes[0] * sx;
+                pos += rotation.axes[2] * sz;
+                if (blocks_agent::is_solid_at(
+                        chunks, pos.x + vec.x, pos.y + vec.y, pos.z + vec.z
+                    )) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    } else if (def.groundingBehaviour == GroundingBehaviour::COMPLETE) {
+        for (int sz = 0; sz < def.size.z; sz++) {
+            for (int sx = 0; sx < def.size.x; sx++) {
+                auto pos = origin;
+                pos += rotation.axes[0] * sx;
+                pos += rotation.axes[2] * sz;
+                if (!blocks_agent::is_solid_at(
+                        chunks, pos.x + vec.x, pos.y + vec.y, pos.z + vec.z
+                    )) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    } else {
+        return blocks_agent::is_solid_at(
+            chunks, origin.x + vec.x, origin.y + vec.y, origin.z + vec.z
+        );
+    }
 }
 
 } // blocks_agent
