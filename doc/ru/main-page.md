@@ -1,10 +1,12 @@
 # Документация
 
-Документация версии 0.31.
+> [!WARNING]
+> Версия находится в разработке. Перейдите к [документации для 0.31.](https://github.com/MihailRis/voxelcore/blob/release-0.31/doc/ru/main-page.md)
 
 ## Разделы
 
 - [XML разметка интерфейса](xml-ui-layouts.md)
+- [Анимация](animation.md)
 - [Аудио](audio.md)
 - [Движок генерации мира](world-generator.md)
 - [Консоль](console.md)
@@ -20,4 +22,5 @@
 - [Скриптинг](scripting.md)
 - [Стили текста](text-styles.md)
 - [Формат моделей VCM](vcm.md)
+- [Формат анимации VCA](vca.md)
 - [Частицы](particles.md)

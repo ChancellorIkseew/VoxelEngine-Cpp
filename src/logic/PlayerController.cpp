@@ -200,8 +200,13 @@ void CameraControl::update(
     auto castRay = [](Player& player, Camera& camera, const glm::vec3& front)
          -> glm::vec3 {
         auto blockEnd = player.chunks->rayCastToObstacle(camera.position, front, 3.0f);
+
+        Entities::RaycastSettings raycast {};
+        raycast.ignoredUid = player.getEntity();
+        raycast.solidEntitiesOnly = true;
+
         auto entityRay = player.getLevel().entities->rayCast(
-            camera.position, front, 3.0f, player.getEntity(), true
+            camera.position, front, 3.0f, raycast
         );
         if (entityRay.has_value() &&
             entityRay->distance < glm::distance(camera.position, blockEnd)) {
@@ -335,6 +340,19 @@ static int determine_rotation(
                 if (camDir.z > 0.0f) return BLOCK_DIR_SOUTH | verticalBit;
                 if (camDir.z < 0.0f) return BLOCK_DIR_NORTH | verticalBit;
             }
+        } else if (name == "ladder") {
+            if (norm.x < 0.0f) return BLOCK_DIR_EAST;
+            if (norm.x > 0.0f) return BLOCK_DIR_WEST;
+            if (norm.z > 0.0f) return BLOCK_DIR_NORTH;
+            if (norm.z < 0.0f) return BLOCK_DIR_SOUTH;
+            if (abs(camDir.x) > abs(camDir.z)) {
+                if (camDir.x > 0.0f) return BLOCK_DIR_EAST;
+                if (camDir.x < 0.0f) return BLOCK_DIR_WEST;
+            }
+            if (abs(camDir.x) < abs(camDir.z)) {
+                if (camDir.z > 0.0f) return BLOCK_DIR_SOUTH;
+                if (camDir.z < 0.0f) return BLOCK_DIR_NORTH;
+            }
         }
     }
     return 0;
@@ -350,7 +368,13 @@ voxel* PlayerController::updateSelection(float maxDistance) {
     glm::ivec3 iend;
     glm::ivec3 norm;
     voxel* vox = chunks.rayCast(
-        camera->position, camera->front, maxDistance, end, norm, iend
+        camera->position,
+        camera->front,
+        maxDistance,
+        end,
+        norm,
+        iend,
+        blocks_agent::RaycastSettings {}
     );
     if (vox) {
         maxDistance = glm::distance(camera->position, end);
@@ -358,8 +382,12 @@ voxel* PlayerController::updateSelection(float maxDistance) {
     auto prevEntity = selection.entity;
     selection.entity = ENTITY_NONE;
     selection.actualPosition = iend;
+
+    Entities::RaycastSettings raycast {};
+    raycast.ignoredUid = player.getEntity();
+
     if (auto result = level.entities->rayCast(
-            camera->position, camera->front, maxDistance, player.getEntity()
+            camera->position, camera->front, maxDistance, raycast
         )) {
         selection.entity = result->entity;
         selection.hitPosition =

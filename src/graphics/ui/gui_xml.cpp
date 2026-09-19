@@ -181,6 +181,7 @@ static void read_uinode(
 
     register_action(node, reader, element, "onclick", UIAction::CLICK);
     register_action(node, reader, element, "onrightclick", UIAction::RIGHT_CLICK);
+    register_action(node, reader, element, "onmiddleclick", UIAction::MIDDLE_CLICK);
     register_action(node, reader, element, "onfocus", UIAction::FOCUS);
     register_action(node, reader, element, "ondefocus", UIAction::DEFOCUS);
     register_action(node, reader, element, "ondoubleclick", UIAction::DOUBLE_CLICK);
@@ -458,8 +459,7 @@ static std::shared_ptr<UINode> read_select(
         }
         auto value = elem->attr("value").getText();
         auto text = parse_inner_text(*elem, reader.getContext());
-        options.push_back(SelectBox::Option {std::move(value), std::move(text)}
-        );
+        options.push_back(SelectBox::Option {std::move(value), std::move(text)});
     }
 
     if (element.has("selected")) {
@@ -481,10 +481,19 @@ static std::shared_ptr<UINode> read_select(
         selected.text = innerText;
     }
 
+    SelectBox::Mode mode = SelectBox::Mode::SELECT;
+    if (element.has("mode")) {
+        auto modeName = element.attr("mode").getText();
+        if (modeName == "button") {
+            mode = SelectBox::Mode::BUTTON;
+        }
+    }
+
     auto selectBox = std::make_shared<SelectBox>(
         gui,
         std::move(options),
         std::move(selected),
+        mode,
         contentWidth,
         std::move(padding)
     );
@@ -889,8 +898,8 @@ static std::shared_ptr<UINode> read_iframe(
     return iframe;
 }
 
-UiXmlReader::UiXmlReader(gui::GUI& gui, scriptenv&& env)
-    : gui(gui), env(std::move(env)) {
+UiXmlReader::UiXmlReader(gui::GUI& gui, const scriptenv& env)
+    : gui(gui), env(env) {
     contextStack.emplace("");
     add("image", read_image);
     add("canvas", read_canvas);
@@ -922,8 +931,7 @@ void UiXmlReader::addIgnore(const std::string& tag) {
     ignored.insert(tag);
 }
 
-std::shared_ptr<UINode> UiXmlReader::readUINode(const xml::xmlelement& element
-) {
+std::shared_ptr<UINode> UiXmlReader::readUINode(const xml::xmlelement& element) {
     if (element.has("if")) {
         const auto& cond = element.attr("if").getText();
         if (cond.empty() || cond == "false" || cond == "nil") return nullptr;

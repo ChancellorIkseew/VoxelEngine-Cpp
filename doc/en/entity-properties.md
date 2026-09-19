@@ -61,11 +61,16 @@ Determines how the physics engine will work with it.
 
 ### *blocking*
 
-Determines whether the entity blocks installation of blocks.
+If true - the entity blocks the placement of a block that intersects with the entity's hitbox.
 
 *In the future will also block other entities movement.*
 
 Default value: *true*.
+
+### *selectable* (raycast opacity)
+
+If set to `false` the cursor will ignore the entity, passing the ray.
+Applies to all uses of raycast without the include_non_selectable flag.
 
 ### *sensors*
 

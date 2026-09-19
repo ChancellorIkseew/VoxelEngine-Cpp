@@ -10,12 +10,18 @@
 #include "graphics/core/Shader.hpp"
 #include "graphics/core/DrawContext.hpp"
 #include "presets/NotePreset.hpp"
+#include "world/Level.hpp"
+#include "objects/Entities.hpp"
+#include "objects/Entity.hpp"
 #include "constants.hpp"
 
 TextsRenderer::TextsRenderer(
-    Batch3D& batch, const Assets& assets, const Frustum& frustum
+    const Level& level,
+    Batch3D& batch,
+    const Assets& assets,
+    const Frustum& frustum
 )
-    : batch(batch), assets(assets), frustum(frustum) {
+    : level(level), batch(batch), assets(assets), frustum(frustum) {
 }
 
 void TextsRenderer::renderNote(
@@ -31,6 +37,13 @@ void TextsRenderer::renderNote(
     const auto& preset = note.getPreset();
     auto pos = note.getPosition();
 
+    entityid_t eid = note.getEntity();
+    if (eid != ENTITY_NONE) {
+        if (auto entity = level.entities->get(eid)) {
+            pos += entity->getTransform().displayPos;
+        }
+    }
+
     if (util::distance2(pos, camera.position) >
         util::sqr(preset.renderDistance / camera.zoom)) {
         return;
@@ -45,7 +58,10 @@ void TextsRenderer::renderNote(
         }
         opacity = preset.xrayOpacity;
     }
-    auto& font = assets.require<Font>(FONT_DEFAULT);
+
+    auto specifiedFont = assets.get<Font>(preset.font);
+    auto& font =
+        specifiedFont ? *specifiedFont : assets.require<Font>(FONT_DEFAULT);
 
     glm::vec3 xvec = note.getAxisX();
     glm::vec3 yvec = note.getAxisY();
@@ -63,7 +79,10 @@ void TextsRenderer::renderNote(
             yvec = camera.up;
         }
         float scale =
-            (1.0f - preset.perspective) * glm::pow(glm::distance(camera.position, pos), 1.0f-preset.perspective);
+            (1.0f - preset.perspective) *
+            glm::pow(
+                glm::distance(camera.position, pos), 1.0f - preset.perspective
+            );
         xvec *= 1.0f + scale;
         yvec *= 1.0f + scale;
     }
@@ -71,10 +90,9 @@ void TextsRenderer::renderNote(
     if (preset.displayMode == NoteDisplayMode::PROJECTED) {
         float scale = 1.0f;
         if (glm::abs(preset.perspective) > 0.0001f) {
-            float scale2 = scale /
-                (glm::distance(camera.position, pos) *
-                            util::sqr(camera.zoom) *
-                            glm::sqrt(glm::tan(camera.getFov() * 0.5f)));
+            float scale2 =
+                scale / (glm::distance(camera.position, pos) * camera.zoom *
+                         glm::sqrt(glm::tan(camera.getFov() * 0.5f)));
             scale = scale2 * preset.perspective +
                     scale * (1.0f - preset.perspective);
         }
@@ -106,6 +124,7 @@ void TextsRenderer::renderNote(
     }
     auto color = preset.color;
     batch.setColor(glm::vec4(color.r, color.g, color.b, color.a * opacity));
+
     font.draw(
         batch,
         text,

@@ -1,5 +1,23 @@
+local _vc_headless = __VC_HEADLESS
+local _vc_project_args = __VC_PROJECT_ARGS
+__VC_HEADLESS = nil
+__VC_PROJECT_ARGS = nil
+
+vc = {
+    is_headless = function()
+        return _vc_headless
+    end,
+    is_client = function()
+        return not _vc_headless
+    end,
+    get_version = __vc_app.get_version,
+    get_setting = __vc_app.get_setting,
+    str_setting = __vc_app.str_setting,
+    get_setting_info = __vc_app.get_setting_info,
+}
+
 local _ffi = ffi
-local _debug_getinfo = debug.getinfo
+local _crc32 = crc32
 
 function crc32(bytes, chksum)
     chksum = chksum or 0
@@ -103,6 +121,8 @@ end
 
 ----------------------------------------------
 
+local _debug_getinfo = debug.getinfo
+
 function debug.count_frames()
     local frames = 1
     while true do
@@ -134,6 +154,20 @@ package = {
 }
 local __cached_scripts = {}
 local __warnings_hidden = {}
+local __compilers = {}
+
+function __vc_internals.register_compiler(sourcepack, extensions, module)
+    local compiler = {
+        packid = sourcepack,
+        extensions = extensions,
+        module = module,
+    }
+    for i, ext in ipairs(extensions) do
+        if not __compilers[ext] then
+            __compilers[ext] = compiler
+        end
+    end
+end
 
 function on_deprecated_call(name, alternatives)
     if __warnings_hidden[name] then
@@ -178,7 +212,22 @@ function reload_module(name)
     end
 end
 
-local internal_locked = false
+local __internal_locked = false
+
+local default_compiler = {
+    module = {
+        execute = function(code, path, env)
+            local script, err = load(code, path)
+            if script == nil then
+                error(err)
+            end
+            if env then
+                script = setfenv(script, env)
+            end
+            return script
+        end
+    }
+}
 
 -- Load script with caching
 --
@@ -188,9 +237,15 @@ local internal_locked = false
 -- nocache - ignore cached script, load anyway
 function __load_script(path, nocache, env)
     local packname, filename = parse_path(path)
+    local is_internal = (packname == "res" or packname == "core")
+       and filename:find("modules/internal") == 1
 
-    if internal_locked and (packname == "res" or packname == "core") 
-       and filename:starts_with("modules/internal") then
+    local ext = path:match("%.([^:/\\]+)$")
+    local compiler = __compilers[ext] or default_compiler
+
+    nocache = nocache or is_internal
+
+    if is_internal and __internal_locked then
         error("access to core:internal modules outside of [core]")
     end
 
@@ -202,13 +257,7 @@ function __load_script(path, nocache, env)
         error("script '"..filename.."' not found in '"..packname.."'")
     end
 
-    local script, err = load(file.read(path), path)
-    if script == nil then
-        error(err)
-    end
-    if env then
-        script = setfenv(script, env)
-    end
+    local script = compiler.module.execute(file.read(path), path, env)
     local result = script()
     if not nocache then
         __cached_scripts[path] = script
@@ -218,8 +267,14 @@ function __load_script(path, nocache, env)
 end
 
 function __vc_lock_internal_modules()
-    internal_locked = true
+    __internal_locked = true
 end
+
+local __pack_envs = __vc__pack_envs
+function __vc_internals.get_pack_env(packid)
+    return __pack_envs[packid]
+end
+__vc__pack_envs = nil
 
 function require(path)
     if not string.find(path, ':') then
@@ -227,7 +282,7 @@ function require(path)
         return require(prefix .. ':' .. path)
     end
     local prefix, file = parse_path(path)
-    local env = __vc__pack_envs[prefix]
+    local env = __pack_envs[prefix]
     return __load_script(prefix .. ":modules/" .. file .. ".lua", nil, env)
 end
 
@@ -248,7 +303,14 @@ function __scripts_cleanup(non_reset_packs)
             __cached_scripts[k] = nil
             package.loaded[k] = nil
         end
-        __vc__pack_envs[packname] = nil
+        __pack_envs[packname] = nil
+        ::continue::
+    end
+    for ext, compiler in pairs(__compilers) do
+        if table.has(non_reset_packs, compiler.packid) then
+            goto continue
+        end
+        __compilers[ext] = nil
         ::continue::
     end
 end
@@ -277,14 +339,26 @@ require "core:internal/extensions/file"
 require "core:internal/extensions/table"
 require "core:internal/extensions/string"
 
+vc.get_project_arg = function (name)
+    return _vc_project_args[name]
+end
+
 local bytearray = require "core:internal/bytearray"
 Bytearray = bytearray.FFIBytearray
 Bytearray_as_string = bytearray.FFIBytearray_as_string
+Bytearray_as_ptr = bytearray.FFIBytearray_as_ptr
+I8view = bytearray.FFII8view
 U16view = bytearray.FFIU16view
 I16view = bytearray.FFII16view
 U32view = bytearray.FFIU32view
 I32view = bytearray.FFII32view
+U64view = bytearray.FFIU64view
+I64view = bytearray.FFII64view
+FLTview = bytearray.FFIFLTview
+DBLview = bytearray.FFIDBLview
 Bytearray_construct = function(...) return Bytearray(...) end
+
+ctypes = require "core:internal/ctypes"
 
 bit.compile = require "core:bitwise/compiler"
 bit.execute = require "core:bitwise/executor"

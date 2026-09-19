@@ -9,22 +9,27 @@
 namespace gui {
     class Container : public UINode, public ::util::ObjectsKeeper {
         int prevScrollY = -1;
+        bool scrollbarTriggered = false;
     protected:
         std::vector<std::shared_ptr<UINode>> nodes;
         std::vector<IntervalEvent> intervalEvents;
-        int scroll = 0;
+        int scrollY = 0;
+        int scrollX = 0;
         int scrollStep = 40;
         int scrollBarWidth = 10;
-        int actualLength = 0;
+        int actualLengthY = 0;
+        int actualLengthX = 0;
         bool scrollable = true;
+        Orientation mainScrollDir = Orientation::VERTICAL;
 
-        bool isScrolling() {
-            return prevScrollY != -1;
+        bool isScrolling() const {
+            return scrollbarTriggered;
         }
     public:
         Container(GUI& gui, glm::vec2 size);
         virtual ~Container();
 
+        virtual void click(int, int) override;
         virtual void act(float delta) override;
         virtual void drawBackground(const DrawContext& pctx, const Assets& assets);
         virtual void draw(const DrawContext& pctx, const Assets& assets) override;
@@ -38,7 +43,7 @@ namespace gui {
         virtual void setScrollable(bool flag);
         void listenInterval(float interval, OnTimeOut callback, int repeat=-1);
         virtual glm::vec2 getContentOffset() const override {
-            return glm::vec2(0.0f, scroll);
+            return glm::vec2(scrollX, scrollY);
         };
         virtual void setSize(const glm::vec2& size) override;
         virtual int getScrollStep() const;

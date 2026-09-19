@@ -18,9 +18,28 @@ namespace model {
     struct Model;
 }
 
-using texture_names_map = std::unordered_map<std::string, std::string>;
+using TextureNamesMap = std::unordered_map<std::string, std::string>;
 
 class ModelBatch {
+public:
+    ModelBatch(
+        size_t capacity,
+        const Assets& assets,
+        const Chunks& chunks,
+        const EngineSettings& settings
+    );
+    ~ModelBatch();
+
+    void draw(
+        const glm::mat4& matrix,
+        const glm::vec4& tint,
+        const model::Model* model,
+        const TextureNamesMap* varTextures
+    );
+    void render();
+
+    void setLightsOffset(const glm::vec3& offset);
+private:
     const Assets& assets;
     const Chunks& chunks;
 
@@ -31,38 +50,24 @@ class ModelBatch {
 
     std::unique_ptr<MainBatch> batch;
 
-    void draw(const model::Mesh& mesh, 
-              const glm::mat4& matrix, 
-              const glm::mat3& rotation, 
-              glm::vec3 tint,
-              const texture_names_map* varTextures,
-              bool backlight);
+    void draw(
+        const model::Mesh& mesh,
+        const glm::mat4& matrix,
+        const glm::mat3& rotation,
+        const glm::vec4& tint,
+        const TextureNamesMap* varTextures,
+        bool backlight
+    );
 
     void setTexture(const std::string& name,
-                    const texture_names_map* varTextures);
+                    const TextureNamesMap* varTextures);
 
     struct DrawEntry {
         glm::mat4 matrix;
         glm::mat3 rotation;
-        glm::vec3 tint;
+        glm::vec4 tint;
         const model::Mesh* mesh;
-        const texture_names_map* varTextures;
+        const TextureNamesMap* varTextures;
     };
     std::vector<DrawEntry> entries;
-public:
-    ModelBatch(
-        size_t capacity,
-        const Assets& assets,
-        const Chunks& chunks,
-        const EngineSettings& settings
-    );
-    ~ModelBatch();
-
-    void draw(glm::mat4 matrix,
-              glm::vec3 tint,
-              const model::Model* model,
-              const texture_names_map* varTextures);
-    void render();
-
-    void setLightsOffset(const glm::vec3& offset);
 };

@@ -5,6 +5,7 @@
 
 #include "debug/Logger.hpp"
 #include "alutil.hpp"
+#include "util/stringutil.hpp"
 #include "../MemoryPCMStream.hpp"
 
 static debug::Logger logger("al-audio");
@@ -99,6 +100,8 @@ ALInputDevice::ALInputDevice(
 
     if (deviceName) {
         deviceSpecifier = std::string(deviceName);
+        logger.info() << "created input device with specifier "
+                      << util::quote(deviceSpecifier);
     } else {
         logger.warning() << "could not retrieve input device specifier";
     }
@@ -711,7 +714,7 @@ std::unique_ptr<ALAudio> ALAudio::create(const AudioSettings& settings) {
         return nullptr;
     }
     bool effects = true;
-    ALint attribs[4] {};
+    [[maybe_unused]] ALint attribs[4] {};
     if (alcIsExtensionPresent(device, "ALC_EXT_EFX") == AL_TRUE) {
         logger.info() << "AL effects extension present";
         attribs[0] = ALC_MAX_AUXILIARY_SENDS;

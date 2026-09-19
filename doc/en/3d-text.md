@@ -4,14 +4,15 @@
 
 The appearance of 3D text, is configured via a table, like [particles](particles.md). All fields are optional.
 
-| Field           | Description                  | Default          |
-| --------------- | ---------------------------- | ---------------- |
-| display         | Display format               | static_billboard |
-| color           | Text color                   | {1, 1, 1, 1}     |
-| scale           | Text scale                   | 1                |
-| render_distance | Text rendering distance      | 32               |
-| xray_opacity    | Visibility through obstacles | 0                |
-| perspective     | Perspective coefficient      | 1                |
+| Field           | Description                              | Default          |
+| --------------- | ---------------------------------------- | ---------------- |
+| display         | Display format                           | static_billboard |
+| color           | Text color                               | {1, 1, 1, 1}     |
+| scale           | Text scale                               | 1                |
+| render_distance | Text rendering distance                  | 32               |
+| xray_opacity    | Visibility through obstacles             | 0                |
+| perspective     | Perspective coefficient                  | 1                |
+| font            | Font. If absent, the default one is used | ""               |
 
 Available display formats:
 
@@ -78,6 +79,14 @@ gfx.text3d.set_rotation(id: int, rotation: mat4)
 ```
 
 Sets the text rotation (Sets the rotated vectors X,Y).
+
+```lua
+gfx.text3d.get_entity(id: int) -> int
+gfx.text3d.set_entity(id: int, entity: int)
+```
+
+Getter and setter for the entity to which the 3D text position is bound.
+The position set via `gfx.text3d.set_pos` is then relative to the entity's position.
 
 ```lua
 gfx.text3d.update_settings(id: int, preset: table)

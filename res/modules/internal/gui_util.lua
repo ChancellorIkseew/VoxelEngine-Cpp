@@ -24,7 +24,7 @@ function gui_util.parse_query(query)
 end
 
 --- @param query string page query string
-function gui_util.load_page(query)
+function gui_util.load_page(app, query)
     local name, args = gui_util.parse_query(query)
     for i = #gui_util.local_dispatchers, 1, -1 do
         local newname, newargs = gui_util.local_dispatchers[i](name, args)
@@ -34,7 +34,7 @@ function gui_util.load_page(query)
     local filename = file.find(string.format("layouts/pages/%s.xml", name))
     if filename then
         name = file.prefix(filename)..":pages/"..name
-        gui.load_document(filename, name, args, { app = __vc_app })
+        gui.load_document(filename, name, args, { app = app })
         return name
     end
 end
@@ -77,15 +77,18 @@ function Element.new(docname, name)
 end
 
 -- the engine automatically creates an instance for every ui document (layout)
-local Document = {}
-function Document.new(docname)
-    return setmetatable({name=docname}, {
-        __index=function(self, k)
-            local elem = Element.new(self.name, k)
-            rawset(self, k, elem)
-            return elem
+local Document = {
+    __index=function(self, k)
+        if type(k) ~= "string" then
+            error("element id is not a string")
         end
-    })
+        local elem = Element.new(self.name, k)
+        rawset(self, k, elem)
+        return elem
+    end
+}
+function Document.new(docname)
+    return setmetatable({name=docname}, Document)
 end
 
 local RadioGroup = {}
@@ -189,13 +192,15 @@ function gui.ask(text, on_yes, on_no, yes_text, no_text)
         <container id='%s' color='#00000080' size-func='-1,-1' z-index='10'>
             <panel color='#507090E0' size='600' padding='16'
                    gravity='center-center' interval='4'>
-                <label margin='4'>%s</label>
+                <label margin='4' markup='md'>%s</label>
                 <button onclick='DATA.on_yes()'>@%s</button>
                 <button onclick='DATA.on_no()'>@%s</button>
             </panel>
         </container>
-    ]], id, string.escape_xml(text)), {on_yes=yes_callback, on_no=no_callback},
-        string.escape_xml(yes_text), string.escape_xml(no_text))
+    ]], id,
+        string.escape_xml(text),
+        string.escape_xml(yes_text),
+        string.escape_xml(no_text)), {on_yes=yes_callback, on_no=no_callback})
     input.add_callback("key:escape", no_callback, gui.root[id])
 end
 

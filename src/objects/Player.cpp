@@ -1,25 +1,27 @@
 #include "Player.hpp"
 
-#include <algorithm>
 #define GLM_ENABLE_EXPERIMENTAL
+
+#include "animation/rigging.hpp"
+#include "content/ContentReport.hpp"
+#include "data/dv_util.hpp"
+#include "debug/Logger.hpp"
+#include "Entities.hpp"
+#include "Entity.hpp"
+#include "items/Inventory.hpp"
+#include "physics/Hitbox.hpp"
+#include "physics/PhysicsSolver.hpp"
+#include "util/stringutil.hpp"
+#include "voxels/Chunks.hpp"
+#include "window/Camera.hpp"
+#include "world/generator/GeneratorDef.hpp"
+#include "world/Level.hpp"
+#include "world/World.hpp"
+
+#include <algorithm>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <utility>
-
-#include "content/ContentReport.hpp"
-#include "items/Inventory.hpp"
-#include "Entities.hpp"
-#include "Entity.hpp"
-#include "rigging.hpp"
-#include "physics/Hitbox.hpp"
-#include "physics/PhysicsSolver.hpp"
-#include "voxels/Chunks.hpp"
-#include "window/Camera.hpp"
-#include "world/Level.hpp"
-#include "world/World.hpp"
-#include "world/generator/GeneratorDef.hpp"
-#include "data/dv_util.hpp"
-#include "debug/Logger.hpp"
 
 static debug::Logger logger("player");
 
@@ -28,7 +30,7 @@ constexpr int SPAWN_ATTEMPTS_PER_UPDATE = 64;
 Player::Player(
     Level& level,
     int64_t id,
-    const std::string& name,
+    const std::wstring& name,
     glm::vec3 position,
     float speed,
     std::shared_ptr<Inventory> inv,
@@ -80,7 +82,7 @@ void Player::updateEntity() {
     }
 }
 
-Hitbox* Player::getHitbox() {
+Hitbox* Player::getHitbox() const {
     if (auto entity = level.entities->get(eid)) {
         return &entity->getRigidbody().hitbox;
     }
@@ -126,7 +128,7 @@ void Player::teleport(glm::vec3 position) {
 void Player::attemptToChooseSpawnpoint() {
     // looks bad to be here tbh
     const auto& generatorDef =
-        level.content.generators.require(level.getWorld()->getGenerator());
+        level.content.generators.require(level.environment.generator);
 
     int minHeight = generatorDef.playerMinSpawnHeight;
     int maxHeight = generatorDef.playerMaxSpawnHeight;
@@ -230,11 +232,11 @@ entityid_t Player::getSelectedEntity() const {
     return selectedEid;
 }
 
-void Player::setName(const std::string& name) {
+void Player::setName(const std::wstring& name) {
     this->name = name;
 }
 
-const std::string& Player::getName() const {
+const std::wstring& Player::getName() const {
     return name;
 }
 
@@ -266,7 +268,7 @@ dv::value Player::serialize() const {
     auto root = dv::object();
 
     root["id"] = id;
-    root["name"] = name;
+    root["name"] = util::wstr2str_utf8(name);
 
     root["position"] = dv::to_value(position);
     root["rotation"] = dv::to_value(rotation);
@@ -293,7 +295,10 @@ dv::value Player::serialize() const {
 
 void Player::deserialize(const dv::value& src) {
     src.at("id").get(id);
-    src.at("name").get(name);
+
+    std::string utf8name;
+    src.at("name").get(utf8name);
+    name = util::str2wstr_utf8(utf8name);
 
     const auto& posarr = src["position"];
 

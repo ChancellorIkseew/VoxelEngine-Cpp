@@ -43,7 +43,7 @@ LevelScreen::LevelScreen(
     Engine& engine, std::unique_ptr<Level> levelPtr, int64_t localPlayer
 )
     : Screen(engine),
-      world(*levelPtr->getWorld()),
+      world(levelPtr->getWorld()),
       postProcessing(std::make_unique<PostProcessing>(
           levelPtr->content.getIndices(ResourceType::POST_EFFECT_SLOT).size()
       )),
@@ -81,7 +81,7 @@ LevelScreen::LevelScreen(
 
     auto resetChunks = [=](bool) {
         player->chunks->saveAndClear();
-        renderer->clear();
+        renderer->resetCache();
     };
     keepAlive(settings.graphics.backlight.observe(resetChunks));
     keepAlive(settings.graphics.softLighting.observe(resetChunks));
@@ -94,11 +94,11 @@ LevelScreen::LevelScreen(
     }));
     keepAlive(input.addCallback(BIND_CHUNKS_RELOAD, [=]() {
         player->chunks->saveAndClear();
-        renderer->clear();
+        renderer->resetCache();
         return false;
     }));
     controller->preQuitCallbacks.listen([this]() {
-        if (!controller->getLevel()->getWorld()->isNameless()) {
+        if (!controller->getLevel()->getWorld().isNameless()) {
             saveWorldPreview();
         }
     });
@@ -109,7 +109,7 @@ LevelScreen::LevelScreen(
 }
 
 LevelScreen::~LevelScreen() {
-    if (!controller->getLevel()->getWorld()->isNameless()) {
+    if (!controller->getLevel()->getWorld().isNameless()) {
         saveDecorations();
     }
     scripting::on_frontend_close();
@@ -153,7 +153,7 @@ void LevelScreen::loadDecorations() {
     }
     auto data = io::read_object(CLIENT_FILE);
     if (data.has("weather")) {
-        renderer->getWeather().deserialize(data["weather"]);
+        frontend->getWeather().deserialize(data["weather"]);
     }
 }
 
@@ -161,7 +161,7 @@ void LevelScreen::saveDecorations() {
     io::create_directory("world:client");
 
     auto data = dv::object();
-    data["weather"] = renderer->getWeather().serialize();
+    data["weather"] = frontend->getWeather().serialize();
     io::write_json(CLIENT_FILE, data, true);
 }
 
@@ -173,7 +173,7 @@ void LevelScreen::saveWorldPreview() {
         int previewSize = settings.ui.worldPreviewSize.get();
 
         // camera special copy for world preview
-        Camera& camera = *player.fpCamera;
+        Camera camera = *player.fpCamera;
         camera.setFov(glm::radians(70.0f));
 
         DrawContext pctx(nullptr, engine.getWindow(), batch.get());
@@ -257,10 +257,11 @@ void LevelScreen::update(float delta) {
 
     hud->update(hudVisible);
 
-    const Weather& weather = renderer->getWeather();
+    const Weather& weather = frontend->getWeather();
     const Player& player = playerController->getPlayer();
     const Camera& camera = *player.currentCamera;
     decorator->update(paused ? 0.0f : delta, camera, weather);
+    renderer->update(camera, delta * !hud->isPause());
 }
 
 void LevelScreen::draw(float delta) {
@@ -271,7 +272,6 @@ void LevelScreen::draw(float delta) {
     if (!hud->isPause()) {
         scripting::on_entities_render(engine.getTime().getDelta());
     }
-    renderer->update(camera, delta * !hud->isPause());
     renderer->renderFrame(ctx, camera, hudVisible, *postProcessing);
     if (!hud->isPause()) {
         scripting::on_frontend_render();

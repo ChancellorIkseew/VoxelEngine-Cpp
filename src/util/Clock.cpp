@@ -1,6 +1,6 @@
 #include "Clock.hpp"
 
-#include <cmath>
+#include <algorithm>
 
 using namespace util;
 
@@ -8,28 +8,24 @@ Clock::Clock(int tickRate, int tickParts)
     : tickRate(tickRate), tickParts(tickParts) {
 }
 
-bool Clock::update(float delta) {
+int Clock::update(float delta) {
     tickTimer += delta;
     float delay = 1.0f / static_cast<float>(tickRate);
-    if (tickTimer > delay || tickPartsUndone) {
-        if (tickPartsUndone) {
-            tickPartsUndone--;
-        } else {
-            tickTimer = std::fmod(tickTimer, delay);
-            tickPartsUndone = tickParts - 1;
-        }
-        ++tickId;
-        return true;
+    if (tickTimer < delay / tickParts) {
+        return 0;
     }
-    return false;
+    int parts = tickTimer / (delay / tickParts);
+    if (parts) {
+        tickTimer -= parts * delay / tickParts;
+        tickTimer = std::min<float>(tickTimer, delay);
+    }
+    lastPartsStart = currentTickPart;
+    currentTickPart = (currentTickPart + parts) % tickParts;
+    return parts;
 }
 
 int Clock::getParts() const {
     return tickParts;
-}
-
-int Clock::getPart() const {
-    return tickParts - tickPartsUndone - 1;
 }
 
 int Clock::getTickRate() const {
@@ -38,4 +34,8 @@ int Clock::getTickRate() const {
 
 int Clock::getTickId() const {
     return tickId;
+}
+
+int Clock::convertPart(int index) const {
+    return (lastPartsStart + index) % tickParts;
 }

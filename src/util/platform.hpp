@@ -2,7 +2,10 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include <filesystem>
+
+#include "interfaces/Process.hpp"
 
 namespace platform {
     void configure_encoding();
@@ -18,7 +21,11 @@ namespace platform {
     /// @brief Get current process running executable path  
     std::filesystem::path get_executable_path();
     /// @brief Run a separate engine instance with specified arguments
-    void new_engine_instance(const std::vector<std::string>& args);
+    std::unique_ptr<Process> new_engine_instance(
+        const std::vector<std::string>& args,
+        std::filesystem::path outputFile,
+        bool subProcess
+    );
     /// @brief Open URL in web browser 
     bool open_url(const std::string& url);
     /// @brief Check if stdin has input

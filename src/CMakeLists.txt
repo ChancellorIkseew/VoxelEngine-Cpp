@@ -18,6 +18,7 @@ endif()
 find_package(ZLIB REQUIRED)
 find_package(PNG REQUIRED)
 find_package(CURL REQUIRED)
+find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 find_package(glfw3 REQUIRED)
 find_package(Freetype REQUIRED)
 if(NOT APPLE)
@@ -37,6 +38,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
                 "$ENV{VCPKG_ROOT}/packages/luajit_${VCPKG_TARGET_TRIPLET}/include/"
         )
     else()
+        set(LUAJIT_PACKAGE_DIR "$ENV{VCPKG_ROOT}/packages/luajit_${VCPKG_TARGET_TRIPLET}")
+
+        if(EXISTS "$ENV{VCPKG_ROOT}/packages/luajit_${VCPKG_TARGET_TRIPLET}/include/luajit-2.1")
+            set(LUAJIT_INCLUDE_DIR "$ENV{VCPKG_ROOT}/packages/luajit_${VCPKG_TARGET_TRIPLET}/include/luajit-2.1")
+        else()
+            set(LUAJIT_INCLUDE_DIR "$ENV{VCPKG_ROOT}/packages/luajit_${VCPKG_TARGET_TRIPLET}/include/luajit")
+        endif()
+
         add_library(luajit SHARED IMPORTED)
         set_target_properties(
             luajit
@@ -45,8 +54,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
                 "$ENV{VCPKG_ROOT}/packages/luajit_${VCPKG_TARGET_TRIPLET}/bin/lua51.dll"
                 IMPORTED_IMPLIB
                 "$ENV{VCPKG_ROOT}/packages/luajit_${VCPKG_TARGET_TRIPLET}/lib/lua51.lib"
-                INTERFACE_INCLUDE_DIRECTORIES
-                "$ENV{VCPKG_ROOT}/packages/luajit_${VCPKG_TARGET_TRIPLET}/include/luajit"
+                INTERFACE_INCLUDE_DIRECTORIES "${LUAJIT_INCLUDE_DIR}"
         )
     endif()
 
@@ -72,12 +80,13 @@ target_link_libraries(
             ZLIB::ZLIB
             PNG::PNG
             CURL::libcurl
+            OpenSSL::Crypto
             OpenAL::OpenAL
             Vorbis::vorbis
             Vorbis::vorbisfile
-            luajit::luajit
             Freetype::Freetype
-    PUBLIC glm::glm # Need public for src/delegates.hpp, which including to
+    PUBLIC luajit::luajit
+           glm::glm # Need public for src/delegates.hpp, which including to
                     # main.cpp
 )
 

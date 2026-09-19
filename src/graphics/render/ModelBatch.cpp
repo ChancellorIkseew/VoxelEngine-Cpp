@@ -61,8 +61,8 @@ void ModelBatch::draw(
     const model::Mesh& mesh,
     const glm::mat4& matrix,
     const glm::mat3& rotation,
-    glm::vec3 tint,
-    const texture_names_map* varTextures,
+    const glm::vec4& tint,
+    const TextureNamesMap* varTextures,
     bool backlight
 ) {
     setTexture(mesh.texture, varTextures);
@@ -97,10 +97,12 @@ void ModelBatch::draw(
     }
 }
 
-void ModelBatch::draw(glm::mat4 matrix,
-                      glm::vec3 tint,
-                      const model::Model* model,
-                      const texture_names_map* varTextures) {
+void ModelBatch::draw(
+    const glm::mat4& matrix,
+    const glm::vec4& tint,
+    const model::Model* model,
+    const TextureNamesMap* varTextures
+) {
     for (const auto& mesh : model->meshes) {
         entries.push_back({
             matrix, extract_rotation(matrix), tint, &mesh, varTextures
@@ -134,7 +136,7 @@ void ModelBatch::setLightsOffset(const glm::vec3& offset) {
 }
 
 void ModelBatch::setTexture(const std::string& name,
-                            const texture_names_map* varTextures) {
+                            const TextureNamesMap* varTextures) {
     if (varTextures && !name.empty() && name.at(0) == '$') {
         const auto& found = varTextures->find(name);
         if (found == varTextures->end()) {

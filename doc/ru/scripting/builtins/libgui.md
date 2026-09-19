@@ -67,8 +67,14 @@ gui.set_active_frame(
     id: str,
     -- Функция-поставщик позиции курсора во фрейме.
     -- Используется для пользовательской проекции (например в 3D)
-    [опционально] cursorLocator
+    [опционально] cursorLocator: function() -> number, number
 )
+
+-- Создаёт снимок фрейма в виде объекта Canvas если указан id фрейма, или всего окна, в случае nil.
+gui.screenshot(
+    -- id фрейма, созданного через gui.create_frame
+    [опционально] frameId: str
+) -> Canvas | nil
 ```
 
 ## Разметка
@@ -140,24 +146,30 @@ gui.confirm(
 ## Документы и шаблоны
 
 ```lua
--- Загружает UI документ и его скрипт. Возвращает имя документа.
+-- Загружает UI документ и его скрипт. Возвращает пространство имён документа
 gui.load_document(
     path: string,  -- путь к xml файлу, например: core:layouts/pages/main.xml
     name: string,  -- id документа, например: core:pages/main
     args: table -- параметры для события on_open
-) -> string
+) -> table
 
--- Загружает шаблон в лояут
+-- Обрабатывает xml шаблон макета из файла
 gui.template(
     -- имя шаблона в /layouts/templates без пути и расширения 
     name: string,
     -- таблица переменных (может быть использована в разметке)
     -- * Пр: <label>%{text}</label>
     -- * text в данном случае, это значение из params по ключу text
-    params: table,
-    -- таблица, доступная в событиях как глобальная переменная DATA
-    [опционально] data: table
+    params: table
 ) -> string
+
+-- Обрабатывает xml шаблон макета из строки
+gui.process_template(
+    -- шаблон в виде строки
+    source: string,
+    -- таблица переменных, как в gui.template
+    params: table
+)
 ```
 
 ## Корневой документ

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "content/Content.hpp"
 #include "debug/Logger.hpp"
 #include "engine/Engine.hpp"
 #include "engine/EnginePaths.hpp"
@@ -41,7 +42,7 @@ LevelController::LevelController(
 
     if (clientPlayer) {
         chunks->lighting = std::make_unique<Lighting>(
-            level->content, *clientPlayer->chunks
+            *level->content.getIndices(), *clientPlayer->chunks
         );
     }
     blocks = std::make_unique<BlocksController>(
@@ -81,7 +82,6 @@ void LevelController::update(float delta, bool pause) {
             continue;
         }
         player->rotationInterpolation.updateTimer(delta);
-        player->updateEntity();
         glm::vec3 position = player->getPosition();
         player->chunks->configure(
             glm::floor(position.x),
@@ -95,19 +95,21 @@ void LevelController::update(float delta, bool pause) {
             *player,
             player.get() == clientPlayer
         );
+        player->updateEntity();
     }
     if (!pause) {
-        // update all objects that needed
         blocks->update(delta, settings.chunks.padding.get());
         level->entities->update(delta);
         for (const auto& [_, player] : *level->players) {
             if (player->isSuspended()) {
                 continue;
             }
-            if (playerTickClock.update(delta)) {
-                if (player->getId() % playerTickClock.getParts() ==
-                    playerTickClock.getPart()) {
-                    
+            if (int parts = playerTickClock.update(delta)) {
+                for (int i = 0; i < parts; i++) {
+                    if (player->getId() % playerTickClock.getParts() !=
+                        playerTickClock.convertPart(i)) {
+                        continue;
+                    }
                     const auto& position = player->getPosition();
                     if (player->chunks->get(
                         std::floor(position.x),
@@ -119,6 +121,7 @@ void LevelController::update(float delta, bool pause) {
                         );
                     }
                 }
+
             }
         }
     }
@@ -137,16 +140,16 @@ void LevelController::processBeforeQuit() {
 }
 
 void LevelController::saveWorld() {
-    auto world = level->getWorld();
-    if (world->isNameless()) {
+    auto& world = level->getWorld();
+    if (world.isNameless()) {
         logger.info() << "nameless world will not be saved";
         return;
     }
-    logger.info() << "writing world '" << world->getName() << "'";
-    world->wfile->createDirectories();
+    logger.info() << "writing world '" << world.getName() << "'";
+    world.wfile->createDirectories();
     scripting::on_world_save();
     level->onSave();
-    level->getWorld()->write(level.get());
+    level->getWorld().write(*level);
 }
 
 void LevelController::onWorldQuit() {

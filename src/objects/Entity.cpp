@@ -1,12 +1,12 @@
 #include "Entity.hpp"
 
-#include "Transform.hpp"
-#include "Rigidbody.hpp"
-#include "ScriptComponents.hpp"
+#include "animation/rigging.hpp"
 #include "Entities.hpp"
 #include "EntityDef.hpp"
-#include "rigging.hpp"
 #include "logic/scripting/scripting.hpp"
+#include "Rigidbody.hpp"
+#include "ScriptComponents.hpp"
+#include "Transform.hpp"
 
 #include <entt/entt.hpp>
 
@@ -37,15 +37,9 @@ rigging::Skeleton* Entity::getSkeleton() const {
     return registry.try_get<rigging::Skeleton>(entity);
 }
 
-void Entity::setRig(const rigging::SkeletonConfig* rigConfig) {
+void Entity::setRig(std::shared_ptr<const rigging::SkeletonConfig> rigConfig) {
     auto& skeleton = registry.get<rigging::Skeleton>(entity);
-    skeleton.config = rigConfig;
-    skeleton.pose.matrices.resize(
-        rigConfig->getBones().size(), glm::mat4(1.0f)
-    );
-    skeleton.calculated.matrices.resize(
-        rigConfig->getBones().size(), glm::mat4(1.0f)
-    );
+    skeleton.setConfig(std::move(rigConfig));
 }
 
 dv::value Entity::serialize() const {
@@ -77,6 +71,9 @@ dv::value Entity::serialize() const {
     if (!scripts.components.empty()) {
         auto& compsMap = root.object("comps");
         for (auto& comp : scripts.components) {
+            if (comp->env == nullptr) {
+                continue;
+            }
             auto data =
                 scripting::get_component_value(comp->env, SAVED_DATA_VARNAME);
             compsMap[comp->name] = data;
@@ -119,6 +116,11 @@ int64_t Entity::getPlayer() const {
 }
 
 void Entity::setPlayer(int64_t id) {
-    registry.get<EntityId>(entity).player = id;
+    auto& eid = registry.get<EntityId>(entity);
+    if (eid.player == id) {
+        return;
+    }
+    eid.player = id;
+    scripting::on_entity_player_set(*this, id);
 }
 

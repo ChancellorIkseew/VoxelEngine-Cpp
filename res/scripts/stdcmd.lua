@@ -133,11 +133,14 @@ console.add_command(
     "Fill specified zone with blocks",
     function(args, kwargs)
         local name, x1,y1,z1, x2,y2,z2 = unpack(args)
+        x1, x2 = math.min(x1, x2), math.max(x1, x2)
+        y1, y2 = math.min(y1, y2), math.max(y1, y2)
+        z1, z2 = math.min(z1, z2), math.max(z1, z2)
         local id = block.index(name)
         for y=y1,y2 do
             for z=z1,z2 do
                 for x=x1,x2 do
-                    block.set(x, y, z, id)
+                    block.set(x, y, z, id, 0, true)
                 end
             end
         end

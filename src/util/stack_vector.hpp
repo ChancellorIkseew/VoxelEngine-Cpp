@@ -6,7 +6,7 @@ namespace util {
     template<typename T, int capacity>
     class stack_vector {
         struct buffer {
-            alignas(alignof(T)) char* data[sizeof(T) * capacity];
+            alignas(alignof(T)) char data[sizeof(T) * capacity];
 
             T* ptr() {
                 return reinterpret_cast<T*>(data);
@@ -43,7 +43,9 @@ namespace util {
             }
         }
 
-        ~stack_vector() = default;
+        ~stack_vector() {
+            clear();
+        }
 
         void push_back(const T& value) {
             if (size_ < capacity) {
@@ -99,6 +101,22 @@ namespace util {
                 throw std::out_of_range("index out of range");
             }
             return data_.ptr()[index];
+        }
+
+        T& front() {
+            return data_.ptr()[0];
+        }
+
+        T& back() {
+            return data_.ptr()[size_ - 1];
+        }
+
+        const T& front() const {
+            return data_.ptr()[0];
+        }
+
+        const T& back() const {
+            return data_.ptr()[size_ - 1];
         }
 
         int size() const { 

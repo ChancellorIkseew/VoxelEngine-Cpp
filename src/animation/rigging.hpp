@@ -33,8 +33,8 @@ namespace rigging {
 
     struct ModelReference {
         std::string name;
-        model::Model* model;
-        bool updateFlag;
+        std::weak_ptr<model::Model> model;
+        bool updateFlag = false;
 
         void refresh(const Assets& assets);
     };
@@ -78,24 +78,27 @@ namespace rigging {
     };
 
     struct Skeleton {
-        const SkeletonConfig* config;
+        std::shared_ptr<const SkeletonConfig> config;
         Pose pose;
         Pose calculated;
         std::vector<BoneFlags> flags;
         std::unordered_map<std::string, std::string> textures;
         std::vector<ModelReference> modelOverrides;
         bool visible;
-        glm::vec3 tint {1.0f, 1.0f, 1.0f};
+        glm::vec4 tint {1.0f, 1.0f, 1.0f, 1.0f};
+        std::vector<glm::vec4> boneTints;
 
         util::VecInterpolation<3, float> interpolation {false};
 
-        Skeleton(const SkeletonConfig* config);
+        Skeleton(std::shared_ptr<const SkeletonConfig> config);
 
         dv::value serialize(bool saveTextures, bool savePose) const;
         void deserialize(const dv::value& root);
+
+        void setConfig(std::shared_ptr<const SkeletonConfig> config);
     };
 
-    class SkeletonConfig {
+    class SkeletonConfig : public std::enable_shared_from_this<SkeletonConfig> {
         std::string name;
         std::unique_ptr<Bone> root;
         std::unordered_map<std::string, size_t> indices;
@@ -135,7 +138,7 @@ namespace rigging {
         ) const;
 
         Skeleton instance() const {
-            return Skeleton(this);
+            return Skeleton(shared_from_this());
         }
 
         const Bone* find(std::string_view str) const;

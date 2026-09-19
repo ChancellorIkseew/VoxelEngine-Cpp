@@ -24,7 +24,7 @@ Called on block broken by player
 function on_replaced(x, y, z, playerid)
 ```
 
-Called on block replaced with other by player
+Called before a player replaces a block
 
 ```lua
 function on_interact(x, y, z, playerid) -> bool
@@ -152,6 +152,17 @@ function on_block_interact(blockid, x, y, z, playerid) -> bool
 
 Called on block RMB click interaction. Prevents block placing if **true** returned.
 
+```lua
+function on_entity_spawn(uid)
+```
+Called after an entity is spawned.
+
+```lua
+function on_entity_despawn(uid)
+```
+
+Called before an entity is despawned.
+
 ### Chunk Events (world.lua)
 
 ```lua
@@ -198,10 +209,25 @@ function on_close(invid: int)
 
 Called on element removed from the screen.
 
+## Content events
+
+Callbacks specified in *content.lua* script.
+
+```lua
+function on_scripts_loading()
+```
+
+Called before the content pack scripts are loaded
+
+```lua
+function on_content_loaded()
+```
+
+Called after the content pack has been fully loaded
+
 ## HUD events
 
 Callbacks specified in *hud.lua* script.
-
 
 ```lua
 function on_hud_open(playerid: int)
